@@ -26,7 +26,7 @@
       margin-bottom: 1rem;
     }
 
-    select, button, input[type="file"] {
+    select, button {
       padding: 0.5rem 1rem;
       font-size: 1rem;
       border: none;
@@ -34,7 +34,7 @@
       cursor: pointer;
     }
 
-    select, input[type="file"] { background: #2ecc71; color: white; }
+    select { background: #2ecc71; color: white; }
     button { background: #27ae60; color: white; }
 
     .steps {
@@ -100,6 +100,29 @@
     .overlay-box button {
       margin-top: 1rem;
       background: #e74c3c;
+      display: block;
+      width: 100%;
+    }
+
+    .preview-button {
+      background: #2980b9;
+      color: white;
+      border: none;
+      padding: 0.4rem 0.8rem;
+      font-size: 0.9rem;
+      border-radius: 0.4rem;
+      cursor: pointer;
+    }
+
+    .preview-image {
+      position: fixed;
+      bottom: 1rem;
+      right: 1rem;
+      width: 120px;
+      height: 120px;
+      border: 2px solid white;
+      display: none;
+      z-index: 11;
     }
   </style>
 </head>
@@ -113,158 +136,144 @@
       <option value="8">8 x 8</option>
     </select>
     <button id="shuffleBtn" onclick="handleShuffleClick()">Mulai / Mainkan</button>
-    <input type="file" id="imageUpload" accept="image/*">
+    <button class="preview-button" onclick="togglePreview()">🖼️ Lihat Gambar Asli</button>
   </div>
   <div class="steps">Langkah: <span id="stepCount">0</span></div>
   <div id="puzzle" class="puzzle"></div>
+  <img id="previewImg" class="preview-image" src="https://i.imgur.com/B7Se6yN.jpeg" alt="Preview">
 
   <div id="winOverlay" class="overlay" style="display: none;">
     <div class="overlay-box">
       🎉 <strong>Selamat!</strong><br>Puzzle Selesai!
-      <br><button onclick="document.getElementById('winOverlay').style.display='none'">Tutup</button>
+      <br>
+      <button onclick="resetAndPlayAgain()">Main Lagi</button>
+      <button onclick="document.getElementById('winOverlay').style.display='none'; togglePreview(true)">Tutup & Lihat Gambar Lengkap</button>
+      <button onclick="changeSize()">Ubah Ukuran</button>
     </div>
   </div>
 
   <script>
-    const puzzle = document.getElementById('puzzle');
-    const stepCount = document.getElementById('stepCount');
-    const sizeSelect = document.getElementById('sizeSelect');
+    const puzzleEl = document.getElementById('puzzle');
+    const stepCountEl = document.getElementById('stepCount');
     const shuffleBtn = document.getElementById('shuffleBtn');
-    const imageUpload = document.getElementById('imageUpload');
+    const sizeSelect = document.getElementById('sizeSelect');
 
+    const imageURL = 'https://i.imgur.com/B7Se6yN.jpeg';
     let size = 3;
+    let tileSize = 0;
     let tiles = [];
-    let steps = 0;
-    let hasShuffled = false;
-    let imageUrl = 'https://i.imgur.com/B7Se6yN.jpeg';
-
-    sizeSelect.addEventListener('change', () => {
-      size = parseInt(sizeSelect.value);
-      hasShuffled = false;
-      shuffleBtn.textContent = "Mulai / Mainkan";
-      setupPuzzle(false);
-    });
-
-    imageUpload.addEventListener('change', (event) => {
-      const file = event.target.files[0];
-      if (file && file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          imageUrl = `url('${e.target.result}')`;
-          document.documentElement.style.setProperty('--bg-image', imageUrl);
-          setupPuzzle(false);
-        }
-        reader.readAsDataURL(file);
-      }
-    });
-
-    function setupPuzzle(shuffle = false) {
-      steps = 0;
-      stepCount.textContent = steps;
-      tiles = [];
-      puzzle.innerHTML = '';
-      puzzle.style.setProperty('--size', size);
-      puzzle.style.setProperty('--tile-size', '80px');
-      puzzle.style.setProperty('--bg-image', imageUrl);
-      puzzle.style.gridTemplateColumns = `repeat(${size}, 80px)`;
-      puzzle.style.gridTemplateRows = `repeat(${size}, 80px)`;
-
-      for (let i = 1; i < size * size; i++) {
-        tiles.push(i);
-      }
-      tiles.push(0);
-
-      if (shuffle) shuffleArray(tiles);
-      renderTiles();
-    }
+    let emptyIndex = 0;
+    let stepCount = 0;
+    let gameStarted = false;
 
     function handleShuffleClick() {
+      size = parseInt(sizeSelect.value);
+      createPuzzle(size);
       shuffleTiles();
+      stepCount = 0;
+      stepCountEl.textContent = stepCount;
       shuffleBtn.textContent = "Acak Ulang";
-      hasShuffled = true;
+      gameStarted = true;
+    }
+
+    function createPuzzle(n) {
+      puzzleEl.innerHTML = '';
+      puzzleEl.style.setProperty('--size', n);
+      tileSize = Math.floor(400 / n);
+      puzzleEl.style.setProperty('--tile-size', tileSize + 'px');
+      puzzleEl.style.gridTemplateColumns = `repeat(${n}, ${tileSize}px)`;
+      puzzleEl.style.gridTemplateRows = `repeat(${n}, ${tileSize}px)`;
+      puzzleEl.style.setProperty('--bg-image', `url(${imageURL})`);
+
+      tiles = [];
+      for (let i = 0; i < n * n; i++) tiles.push(i);
+      emptyIndex = n * n - 1;
     }
 
     function shuffleTiles() {
-      shuffleArray(tiles);
-      steps = 0;
-      stepCount.textContent = steps;
-      renderTiles();
-    }
-
-    function shuffleArray(array) {
-      for (let i = array.length - 1; i > 0; i--) {
-        let j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
-      }
-      if (!isSolvable(array)) shuffleArray(array);
+      let shuffled;
+      do {
+        shuffled = tiles.slice(0, -1).sort(() => Math.random() - 0.5);
+        shuffled.push(emptyIndex);
+      } while (!isSolvable(shuffled));
+      tiles = shuffled;
+      renderPuzzle();
     }
 
     function isSolvable(arr) {
       let inv = 0;
       for (let i = 0; i < arr.length; i++) {
         for (let j = i + 1; j < arr.length; j++) {
-          if (arr[i] && arr[j] && arr[i] > arr[j]) inv++;
+          if (arr[i] !== emptyIndex && arr[j] !== emptyIndex && arr[i] > arr[j]) inv++;
         }
       }
-      if (size % 2 === 1) return inv % 2 === 0;
-      let row = Math.floor(arr.indexOf(0) / size);
-      return (row % 2 === 0) ? inv % 2 === 1 : inv % 2 === 0;
+      return inv % 2 === 0;
     }
 
-    function renderTiles() {
-      puzzle.innerHTML = '';
-      const tileSize = 80;
-
+    function renderPuzzle() {
+      puzzleEl.innerHTML = '';
       tiles.forEach((val, i) => {
         const tile = document.createElement('div');
         tile.classList.add('tile');
-        tile.style.width = `${tileSize}px`;
-        tile.style.height = `${tileSize}px`;
-
-        if (val === 0) {
+        if (val === emptyIndex) {
           tile.classList.add('empty');
         } else {
-          const correctRow = Math.floor((val - 1) / size);
-          const correctCol = (val - 1) % size;
-          tile.style.backgroundPosition = `-${correctCol * tileSize}px -${correctRow * tileSize}px`;
-
+          const row = Math.floor(val / size);
+          const col = val % size;
+          tile.style.backgroundPosition = `-${col * tileSize}px -${row * tileSize}px`;
           const number = document.createElement('div');
           number.className = 'number';
-          number.textContent = val;
+          number.textContent = val + 1;
           tile.appendChild(number);
+          tile.addEventListener('click', () => moveTile(i));
         }
-
-        tile.addEventListener('click', () => moveTile(i));
-        puzzle.appendChild(tile);
+        puzzleEl.appendChild(tile);
       });
     }
 
     function moveTile(index) {
-      const emptyIndex = tiles.indexOf(0);
-      const isAdjacent = [1, -1, size, -size].includes(index - emptyIndex) ||
-                         Math.abs(index - emptyIndex) === 1 && Math.floor(index / size) === Math.floor(emptyIndex / size);
-
+      const [r1, c1] = [Math.floor(index / size), index % size];
+      const [r2, c2] = [Math.floor(emptyIndex / size), emptyIndex % size];
+      const isAdjacent = (Math.abs(r1 - r2) + Math.abs(c1 - c2)) === 1;
       if (!isAdjacent) return;
-
       [tiles[index], tiles[emptyIndex]] = [tiles[emptyIndex], tiles[index]];
-      steps++;
-      stepCount.textContent = steps;
-      renderTiles();
-
-      if (isComplete()) {
-        document.getElementById('winOverlay').style.display = 'flex';
-      }
+      emptyIndex = index;
+      stepCount++;
+      stepCountEl.textContent = stepCount;
+      renderPuzzle();
+      checkWin();
     }
 
-    function isComplete() {
+    function checkWin() {
       for (let i = 0; i < tiles.length - 1; i++) {
-        if (tiles[i] !== i + 1) return false;
+        if (tiles[i] !== i) return;
       }
-      return tiles[tiles.length - 1] === 0;
+      document.getElementById('winOverlay').style.display = 'flex';
     }
 
-    document.documentElement.style.setProperty('--bg-image', `url('${imageUrl}')`);
-    setupPuzzle();
+    function resetAndPlayAgain() {
+      document.getElementById('winOverlay').style.display = 'none';
+      handleShuffleClick();
+    }
+
+    function changeSize() {
+      document.getElementById('winOverlay').style.display = 'none';
+    }
+
+    function togglePreview(forceShow = false) {
+      const preview = document.getElementById('previewImg');
+      if (forceShow) {
+        preview.style.display = 'block';
+        return;
+      }
+      preview.style.display = preview.style.display === 'block' ? 'none' : 'block';
+    }
+
+    window.onload = () => {
+      createPuzzle(size);
+      renderPuzzle();
+      shuffleBtn.textContent = "Mulai / Mainkan";
+    }
   </script>
 </body>
 </html>
