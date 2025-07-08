@@ -21,11 +21,12 @@
 
     .controls {
       display: flex;
+      flex-wrap: wrap;
       gap: 1rem;
       margin-bottom: 1rem;
     }
 
-    select, button {
+    select, button, input[type="file"] {
       padding: 0.5rem 1rem;
       font-size: 1rem;
       border: none;
@@ -33,7 +34,7 @@
       cursor: pointer;
     }
 
-    select { background: #2ecc71; color: white; }
+    select, input[type="file"] { background: #2ecc71; color: white; }
     button { background: #27ae60; color: white; }
 
     .steps {
@@ -49,7 +50,7 @@
 
     .tile {
       position: relative;
-      background-image: url('https://i.imgur.com/B7Se6yN.jpeg');
+      background-image: var(--bg-image);
       background-repeat: no-repeat;
       background-size: calc(var(--tile-size) * var(--size)) calc(var(--tile-size) * var(--size));
       transition: all 0.2s ease;
@@ -112,6 +113,7 @@
       <option value="8">8 x 8</option>
     </select>
     <button id="shuffleBtn" onclick="handleShuffleClick()">Mulai / Mainkan</button>
+    <input type="file" id="imageUpload" accept="image/*">
   </div>
   <div class="steps">Langkah: <span id="stepCount">0</span></div>
   <div id="puzzle" class="puzzle"></div>
@@ -128,17 +130,32 @@
     const stepCount = document.getElementById('stepCount');
     const sizeSelect = document.getElementById('sizeSelect');
     const shuffleBtn = document.getElementById('shuffleBtn');
+    const imageUpload = document.getElementById('imageUpload');
 
     let size = 3;
     let tiles = [];
     let steps = 0;
     let hasShuffled = false;
+    let imageUrl = 'https://i.imgur.com/B7Se6yN.jpeg';
 
     sizeSelect.addEventListener('change', () => {
       size = parseInt(sizeSelect.value);
       hasShuffled = false;
       shuffleBtn.textContent = "Mulai / Mainkan";
       setupPuzzle(false);
+    });
+
+    imageUpload.addEventListener('change', (event) => {
+      const file = event.target.files[0];
+      if (file && file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          imageUrl = `url('${e.target.result}')`;
+          document.documentElement.style.setProperty('--bg-image', imageUrl);
+          setupPuzzle(false);
+        }
+        reader.readAsDataURL(file);
+      }
     });
 
     function setupPuzzle(shuffle = false) {
@@ -148,13 +165,14 @@
       puzzle.innerHTML = '';
       puzzle.style.setProperty('--size', size);
       puzzle.style.setProperty('--tile-size', '80px');
+      puzzle.style.setProperty('--bg-image', imageUrl);
       puzzle.style.gridTemplateColumns = `repeat(${size}, 80px)`;
       puzzle.style.gridTemplateRows = `repeat(${size}, 80px)`;
 
       for (let i = 1; i < size * size; i++) {
         tiles.push(i);
       }
-      tiles.push(0); // empty at bottom right
+      tiles.push(0);
 
       if (shuffle) shuffleArray(tiles);
       renderTiles();
@@ -245,6 +263,7 @@
       return tiles[tiles.length - 1] === 0;
     }
 
+    document.documentElement.style.setProperty('--bg-image', `url('${imageUrl}')`);
     setupPuzzle();
   </script>
 </body>
