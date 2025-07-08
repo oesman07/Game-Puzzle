@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Game Puzzle Gambar</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin-top: 40px;
+    }
+    #puzzle-container {
+      width: 300px;
+      height: 300px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2px;
+      margin: auto;
+      border: 2px solid #000;
+    }
+    .tile {
+      width: 100px;
+      height: 100px;
+      background-image: url('gambar.jpg'); /* ganti sesuai nama gambarmu */
+      background-size: 300px 300px;
+      box-sizing: border-box;
+      border: 1px solid #ccc;
+      cursor: pointer;
+    }
+    button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>Game Puzzle Gambar</h1>
+  <div id="puzzle-container"></div>
+  <button>Acak Puzzle</button>
+
+  <script>
+    const container = document.getElementById("puzzle-container");
+    const size = 3;
+    let tiles = [];
+    let emptyIndex = size * size - 1;
+
+    function createTiles() {
+      tiles = [];
+      for (let i = 0; i < size * size - 1; i++) {
+        tiles.push(i);
+      }
+      tiles.push(null);
+    }
+
+    function isSolvable(array) {
+      let invCount = 0;
+      const flat = array.filter(n => n !== null);
+      for (let i = 0; i < flat.length - 1; i++) {
+        for (let j = i + 1; j < flat.length; j++) {
+          if (flat[i] > flat[j]) invCount++;
+        }
+      }
+      return invCount % 2 === 0;
+    }
+
+    function shuffleTiles() {
+      do {
+        for (let i = tiles.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * i);
+          [tiles[i], tiles[j]] = [tiles[j], tiles[i]];
+        }
+      } while (!isSolvable(tiles));
+
+      emptyIndex = tiles.indexOf(null);
+      renderTiles();
+    }
+
+    function renderTiles() {
+      container.innerHTML = "";
+      tiles.forEach((val, i) => {
+        const tile = document.createElement("div");
+        tile.className = "tile";
+
+        if (val !== null) {
+          const row = Math.floor(val / size);
+          const col = val % size;
+          tile.style.backgroundPosition = `-${col * 100}px -${row * 100}px`;
+          tile.textContent = val + 1;
+          tile.style.color = "#fff";
+          tile.style.fontWeight = "bold";
+          tile.style.fontSize = "20px";
+          tile.style.display = "flex";
+          tile.style.alignItems = "center";
+          tile.style.justifyContent = "center";
+          tile.addEventListener("click", () => tryMoveTile(i));
+        } else {
+          tile.style.background = "#eee";
+        }
+
+        container.appendChild(tile);
+      });
+    }
+
+    function tryMoveTile(clickedIndex) {
+      const [clickedRow, clickedCol] = [Math.floor(clickedIndex / size), clickedIndex % size];
+      const [emptyRow, emptyCol] = [Math.floor(emptyIndex / size), emptyIndex % size];
+
+      const isAdjacent =
+        (clickedRow === emptyRow && Math.abs(clickedCol - emptyCol) === 1) ||
+        (clickedCol === emptyCol && Math.abs(clickedRow - emptyRow) === 1);
+
+      if (isAdjacent) {
+        [tiles[clickedIndex], tiles[emptyIndex]] = [tiles[emptyIndex], tiles[clickedIndex]];
+        emptyIndex = clickedIndex;
+        renderTiles();
+        checkWin();
+      }
+    }
+
+    function checkWin() {
+      for (let i = 0; i < tiles.length - 1; i++) {
+        if (tiles[i] !== i) return;
+      }
+      alert("🎉 Selamat! Puzzle Selesai!");
+    }
+
+    createTiles();
+    renderTiles();
+    document.querySelector("button").addEventListener("click", shuffleTiles);
+  </script>
+</body>
+</html>
