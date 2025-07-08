@@ -138,30 +138,31 @@
       setupPuzzle();
     });
 
-    function setupPuzzle() {
-      steps = 0;
-      stepCount.textContent = steps;
-      tiles = [];
-      puzzle.innerHTML = '';
-      puzzle.style.setProperty('--size', size);
-      puzzle.style.setProperty('--tile-size', '80px');
-      puzzle.style.gridTemplateColumns = `repeat(${size}, 80px)`;
-      puzzle.style.gridTemplateRows = `repeat(${size}, 80px)`;
+   function setupPuzzle(shuffle = false) {
+  steps = 0;
+  stepCount.textContent = steps;
+  tiles = [];
+  puzzle.innerHTML = '';
+  puzzle.style.setProperty('--size', size);
+  puzzle.style.setProperty('--tile-size', '80px');
+  puzzle.style.gridTemplateColumns = `repeat(${size}, 80px)`;
+  puzzle.style.gridTemplateRows = `repeat(${size}, 80px)`;
 
-      for (let i = 0; i < size * size; i++) {
-        tiles.push(i);
-      }
-      shuffleArray(tiles);
+  for (let i = 0; i < size * size; i++) {
+    tiles.push(i);
+  }
 
-      renderTiles();
-    }
+  if (shuffle) {
+    shuffleArray(tiles);
+  }
 
-    function shuffleTiles() {
-      shuffleArray(tiles);
-      steps = 0;
-      stepCount.textContent = steps;
-      renderTiles();
-    }
+  renderTiles();
+}
+
+function shuffleTiles() {
+  setupPuzzle(true); // true artinya: acak
+}
+
 
     function shuffleArray(array) {
       for (let i = array.length - 1; i > 0; i--) {
