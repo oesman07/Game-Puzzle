@@ -1,51 +1,101 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Game Puzzle Gambar</title>
+  <meta charset="UTF-8">
+  <title>Game Puzzle Gumi</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      margin-top: 40px;
+      font-family: sans-serif;
+      background: #111;
+      color: #fff;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
     }
     #puzzle-container {
-      width: 300px;
-      height: 300px;
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 2px;
-      margin: auto;
-      border: 2px solid #000;
+      grid-template-columns: repeat(3, 100px);
+      grid-template-rows: repeat(3, 100px);
+      gap: 4px;
+      margin-bottom: 20px;
     }
     .tile {
       width: 100px;
       height: 100px;
-      background-image: url('https://i.imgur.com/B7Se6yN.jpeg'); /* ganti sesuai nama gambarmu */
       background-size: 300px 300px;
-      box-sizing: border-box;
-      border: 1px solid #ccc;
+      border-radius: 8px;
+      position: relative;
       cursor: pointer;
     }
+    .tile span {
+      position: absolute;
+      bottom: 5px;
+      right: 8px;
+      font-size: 12px;
+      background: rgba(0, 0, 0, 0.6);
+      padding: 2px 4px;
+      border-radius: 4px;
+    }
+    .tile:empty {
+      background: #222;
+    }
     button {
-      margin-top: 20px;
       padding: 10px 20px;
       font-size: 16px;
+      border: none;
+      border-radius: 8px;
       cursor: pointer;
+      background: #0f0;
+      color: #000;
+      font-weight: bold;
+    }
+    #steps {
+      margin-bottom: 10px;
+    }
+    .overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 24px;
+      font-weight: bold;
+      z-index: 999;
+      display: none;
+      flex-direction: column;
+    }
+    .overlay button {
+      margin-top: 20px;
     }
   </style>
 </head>
 <body>
-  <h1>Game Puzzle Gambar</h1>
+  <h1>Game Puzzle Gumi</h1>
+  <div id="steps">Langkah: 0</div>
   <div id="puzzle-container"></div>
   <button>Acak Puzzle</button>
 
+  <div class="overlay" id="overlay">
+    🎉 Selamat! Puzzle Selesai!
+    <button onclick="document.getElementById('overlay').style.display='none'">Tutup</button>
+  </div>
+
   <script>
     const container = document.getElementById("puzzle-container");
+    const stepsCounter = document.getElementById("steps");
+    const overlay = document.getElementById("overlay");
     const size = 3;
     let tiles = [];
     let emptyIndex = size * size - 1;
+    let steps = 0;
 
     function createTiles() {
       tiles = [];
@@ -67,6 +117,8 @@
     }
 
     function shuffleTiles() {
+      steps = 0;
+      updateSteps();
       do {
         for (let i = tiles.length - 1; i > 0; i--) {
           const j = Math.floor(Math.random() * i);
@@ -83,23 +135,16 @@
       tiles.forEach((val, i) => {
         const tile = document.createElement("div");
         tile.className = "tile";
-
         if (val !== null) {
-          const row = Math.floor(val / size);
-          const col = val % size;
-          tile.style.backgroundPosition = `-${col * 100}px -${row * 100}px`;
-          tile.textContent = val + 1;
-          tile.style.color = "#fff";
-          tile.style.fontWeight = "bold";
-          tile.style.fontSize = "20px";
-          tile.style.display = "flex";
-          tile.style.alignItems = "center";
-          tile.style.justifyContent = "center";
+          tile.style.backgroundImage = `url('https://i.imgur.com/B7Se6yN.jpeg')`;
+          const x = (val % size) * -100;
+          const y = Math.floor(val / size) * -100;
+          tile.style.backgroundPosition = `${x}px ${y}px`;
+          const number = document.createElement("span");
+          number.textContent = val + 1;
+          tile.appendChild(number);
           tile.addEventListener("click", () => tryMoveTile(i));
-        } else {
-          tile.style.background = "#eee";
         }
-
         container.appendChild(tile);
       });
     }
@@ -115,16 +160,22 @@
       if (isAdjacent) {
         [tiles[clickedIndex], tiles[emptyIndex]] = [tiles[emptyIndex], tiles[clickedIndex]];
         emptyIndex = clickedIndex;
+        steps++;
+        updateSteps();
         renderTiles();
         checkWin();
       }
+    }
+
+    function updateSteps() {
+      stepsCounter.textContent = `Langkah: ${steps}`;
     }
 
     function checkWin() {
       for (let i = 0; i < tiles.length - 1; i++) {
         if (tiles[i] !== i) return;
       }
-      alert("🎉 Selamat! Puzzle Selesai!");
+      overlay.style.display = "flex";
     }
 
     createTiles();
