@@ -61,7 +61,7 @@
     .tile .number {
       position: absolute;
       top: 4px;
-      left: 6px;
+      left: 4px;
       font-size: 0.75rem;
       background: rgba(0,0,0,0.5);
       padding: 2px 5px;
@@ -100,7 +100,6 @@
       margin-top: 1rem;
       background: #e74c3c;
     }
-
   </style>
 </head>
 <body>
@@ -112,7 +111,7 @@
       <option value="5">5 x 5</option>
       <option value="8">8 x 8</option>
     </select>
-    <button onclick="shuffleTiles()">Acak Puzzle</button>
+    <button id="shuffleBtn" onclick="handleShuffleClick()">Mulai / Mainkan</button>
   </div>
   <div class="steps">Langkah: <span id="stepCount">0</span></div>
   <div id="puzzle" class="puzzle"></div>
@@ -128,48 +127,58 @@
     const puzzle = document.getElementById('puzzle');
     const stepCount = document.getElementById('stepCount');
     const sizeSelect = document.getElementById('sizeSelect');
+    const shuffleBtn = document.getElementById('shuffleBtn');
 
     let size = 3;
     let tiles = [];
     let steps = 0;
+    let hasShuffled = false;
 
     sizeSelect.addEventListener('change', () => {
       size = parseInt(sizeSelect.value);
-      setupPuzzle();
+      hasShuffled = false;
+      shuffleBtn.textContent = "Mulai / Mainkan";
+      setupPuzzle(false);
     });
 
-   function setupPuzzle(shuffle = false) {
-  steps = 0;
-  stepCount.textContent = steps;
-  tiles = [];
-  puzzle.innerHTML = '';
-  puzzle.style.setProperty('--size', size);
-  puzzle.style.setProperty('--tile-size', '80px');
-  puzzle.style.gridTemplateColumns = `repeat(${size}, 80px)`;
-  puzzle.style.gridTemplateRows = `repeat(${size}, 80px)`;
+    function setupPuzzle(shuffle = false) {
+      steps = 0;
+      stepCount.textContent = steps;
+      tiles = [];
+      puzzle.innerHTML = '';
+      puzzle.style.setProperty('--size', size);
+      puzzle.style.setProperty('--tile-size', '80px');
+      puzzle.style.gridTemplateColumns = `repeat(${size}, 80px)`;
+      puzzle.style.gridTemplateRows = `repeat(${size}, 80px)`;
 
-  for (let i = 0; i < size * size; i++) {
-    tiles.push(i);
-  }
+      for (let i = 1; i < size * size; i++) {
+        tiles.push(i);
+      }
+      tiles.push(0); // empty at bottom right
 
-  if (shuffle) {
-    shuffleArray(tiles);
-  }
+      if (shuffle) shuffleArray(tiles);
+      renderTiles();
+    }
 
-  renderTiles();
-}
+    function handleShuffleClick() {
+      shuffleTiles();
+      shuffleBtn.textContent = "Acak Ulang";
+      hasShuffled = true;
+    }
 
-function shuffleTiles() {
-  setupPuzzle(true); // true artinya: acak
-}
-
+    function shuffleTiles() {
+      shuffleArray(tiles);
+      steps = 0;
+      stepCount.textContent = steps;
+      renderTiles();
+    }
 
     function shuffleArray(array) {
       for (let i = array.length - 1; i > 0; i--) {
         let j = Math.floor(Math.random() * (i + 1));
         [array[i], array[j]] = [array[j], array[i]];
       }
-      if (!isSolvable(array)) shuffleArray(array); // ensure solvable
+      if (!isSolvable(array)) shuffleArray(array);
     }
 
     function isSolvable(arr) {
@@ -187,7 +196,6 @@ function shuffleTiles() {
     function renderTiles() {
       puzzle.innerHTML = '';
       const tileSize = 80;
-      const fullSize = tileSize * size;
 
       tiles.forEach((val, i) => {
         const tile = document.createElement('div');
